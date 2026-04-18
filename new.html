@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>心理戦：新世の神と探偵 - Mind Battle: God vs Detective</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a0a;
+            color: #e0e0e0;
+            font-family: 'Noto Serif JP', 'MS Mincho', serif;
+            min-height: 100vh;
+        }
+        .header {
+            text-align: center;
+            padding: 1.5rem;
+            border-bottom: 2px solid #8b0000;
+        }
+        .title {
+            font-size: 2rem;
+            color: #d4af37;
+            letter-spacing: 0.3em;
+        }
+        .subtitle {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+        .setup-screen {
+            max-width: 500px;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            background: #1a1a1a;
+            border: 2px solid #8b0000;
+            border-radius: 8px;
+        }
+        .setup-screen h2 {
+            color: #d4af37;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .api-input {
+            width: 100%;
+            padding: 0.8rem;
+            background: #0a0a0a;
+            border: 1px solid #8b0000;
+            color: #e0e0e0;
+            font-family: monospace;
+            border-radius: 4px;
+            margin-bottom: 0.8rem;
+        }
+        .btn {
+            width: 100%;
+            padding: 0.8rem;
+            background: #8b0000;
+            color: #fff;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .btn:hover { background: #a00000; }
+        .btn:disabled { background: #333; cursor: not-allowed; }
+        .game-screen {
+            display: none;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 1rem;
+        }
+        .game-screen.active { display: grid !important; }
+        @media (max-width: 900px) {
+            .game-screen { grid-template-columns: 1fr; }
+        }
+        .panel {
+            background: #1a1a1a;
+            border: 1px solid #8b0000;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        .panel-title {
+            color: #d4af37;
+            border-bottom: 1px solid #8b0000;
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.8rem;
+            font-size: 0.9rem;
+        }
+        .suspicion-bar {
+            background: #0a0a0a;
+            height: 25px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+            position: relative;
+        }
+        .suspicion-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #d4af37 0%, #8b0000 100%);
+            width: 5%;
+            transition: width 0.5s;
+        }
+        .suspicion-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+        .zone-btns {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.8rem;
+        }
+        .zone-btn {
+            flex: 1;
+            padding: 0.6rem;
+            background: transparent;
+            border: 2px solid #666;
+            color: #e0e0e0;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        .zone-btn.active {
+            background: #8b0000;
+            border-color: #8b0000;
+        }
+        .zone-btn.talk.active {
+            background: #d4af37;
+            color: #000;
+            border-color: #d4af37;
+        }
+        .chat-area {
+            height: 450px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            padding: 0.8rem;
+            overflow-y: auto;
+            margin-bottom: 0.8rem;
+            font-size: 0.9rem;
+        }
+        .message {
+            margin-bottom: 0.8rem;
+            padding: 0.8rem;
+            border-radius: 4px;
+            line-height: 1.6;
+        }
+        .message-kira {
+            background: rgba(139, 0, 0, 0.2);
+            margin-left: 10%;
+            text-align: right;
+            border-right: 3px solid #8b0000;
+        }
+        .message-l {
+            background: rgba(212, 175, 55, 0.1);
+            margin-right: 10%;
+            border-left: 3px solid #d4af37;
+        }
+        .message-system {
+            background: #333;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+        .input-area {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .input-field {
+            flex: 1;
+            padding: 0.6rem;
+            background: #0a0a0a;
+            border: 1px solid #8b0000;
+            color: #e0e0e0;
+            border-radius: 4px;
+        }
+        .news-item {
+            background: rgba(139, 0, 0, 0.1);
+            padding: 0.6rem;
+            margin-bottom: 0.4rem;
+            font-size: 0.85rem;
+            border-left: 2px solid #d4af37;
+        }
+        .victim-item {
+            background: rgba(139, 0, 0, 0.2);
+            padding: 0.4rem;
+            margin-bottom: 0.3rem;
+            font-size: 0.85rem;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal.active { display: flex !important; }
+        .modal-content {
+            background: #1a1a1a;
+            border: 2px solid #8b0000;
+            padding: 1.5rem;
+            max-width: 400px;
+            text-align: center;
+            border-radius: 8px;
+        }
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #d4af37;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .ai-report {
+            background: rgba(0, 50, 0, 0.3);
+            border: 1px solid #0f0;
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            font-size: 0.8rem;
+            color: #0f0;
+        }
+        .error-msg {
+            color: #ff4444;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+        .api-selector {
+            margin-bottom: 1rem;
+        }
+        .api-selector label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #d4af37;
+        }
+        .api-selector select {
+            width: 100%;
+            padding: 0.6rem;
+            background: #0a0a0a;
+            border: 1px solid #8b0000;
+            color: #e0e0e0;
+            border-radius: 4px;
+        }
+        .api-info {
+            font-size: 0.8rem;
+            color: #999;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: #0a0a0a;
+            border-radius: 4px;
+        }
+        .disclaimer {
+            font-size: 0.75rem;
+            color: #666;
+            text-align: center;
+            margin-top: 1rem;
+            padding: 0.5rem;
+            border-top: 1px solid #333;
+        }
+        .disclaimer a {
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="title">心理戦：新世の神と探偵</h1>
+        <div class="subtitle">Mind Battle: God vs Detective</div>
+    </div>
+
+    <div class="setup-screen" id="setupScreen">
+        <h2>🔑 API設定</h2>
+
+        <div class="api-selector">
+            <label>APIプロバイダを選択:</label>
+            <select id="apiProvider" onchange="updateApiInfo()">
+                <option value="openrouter">OpenRouter（CORS対応・推奨）</option>
+                <option value="groq">Groq（高速・要プロキシ）</option>
+                <option value="mistral">Mistral</option>
+            </select>
+            <div class="api-info" id="apiInfo">
+                OpenRouter: CORS対応でそのまま使えます。無料枠あり。
+            </div>
+        </div>
+
+        <p style="margin-bottom: 0.8rem; color: #999; font-size: 0.85rem;">
+            <a id="apiLink" href="https://openrouter.ai/" target="_blank" style="color: #d4af37;">openrouter.ai</a> で取得
+        </p>
+        <input type="text" class="api-input" id="apiKeyInput" placeholder="sk-or-xxx...">
+        <button class="btn" id="startBtn" onclick="startGame()">ゲーム開始</button>
+        <div id="errorArea"></div>
+
+        <div class="disclaimer">
+            このゲームは「デスノート」をオマージュしたオリジナル作品です。<br>
+            原作の権利は大場つぐみ先生、小畑健先生、および集英社に帰属します。<br>
+            <a href="https://github.com/" target="_blank">GitHub</a>にてテスト公開！！
+        </div>
+    </div>
+
+    <div class="game-screen" id="gameScreen">
+        <div class="panel">
+            <div class="panel-title">📊 探偵の疑心度</div>
+            <div class="suspicion-bar">
+                <div class="suspicion-fill" id="suspicionFill"></div>
+                <div class="suspicion-text" id="suspicionText">5%</div>
+            </div>
+            <div style="font-size: 0.8rem; color: #999; margin-bottom: 0.8rem;">
+                ターン: <span id="turnCount">1</span>/20
+            </div>
+
+            <div class="panel-title">📺 ニュース</div>
+            <div id="newsArea"></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">💬 戦闘ログ</div>
+
+            <div class="zone-btns">
+                <button class="zone-btn talk active" onclick="setZone('talk', this)">🗣️対話</button>
+                <button class="zone-btn" onclick="setZone('note', this)">📓執筆</button>
+                <button class="zone-btn" onclick="setZone('action', this)">⚡行動</button>
+            </div>
+
+            <div class="chat-area" id="chatArea"></div>
+
+            <div class="input-area">
+                <input type="text" class="input-field" id="userInput" placeholder="探偵と対話する...">
+                <button class="btn" style="width: auto;" id="sendBtn" onclick="submitAction()">実行</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">📓 運命のノート</div>
+            <div id="victimList">
+                <div style="color: #666; font-size: 0.85rem;">記録なし</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="gameOverModal">
+        <div class="modal-content">
+            <h2 id="modalTitle" style="color: #d4af37; margin-bottom: 0.8rem;">GAME OVER</h2>
+            <p id="modalText" style="font-size: 0.9rem;"></p>
+            <button class="btn" onclick="location.reload()" style="margin-top: 1rem;">再挑戦</button>
+        </div>
+    </div>
+
+    <script>
+        // API設定
+        const API_CONFIG = {
+            openrouter: {
+                url: 'https://openrouter.ai/api/v1/chat/completions',
+                model: 'nvidia/llama-3.1-nemotron-70b-instruct:free',
+                link: 'https://openrouter.ai/',
+                info: 'OpenRouter: CORS対応でそのまま使えます。無料枠あり。',
+                keyPrefix: 'sk-or-'
+            },
+            groq: {
+                url: 'https://api.groq.com/openai/v1/chat/completions',
+                model: 'llama-3.3-70b-versatile',
+                link: 'https://console.groq.com/',
+                info: 'Groq: 超高速ですがCORS制限あり。ブラウザ拡張などが必要。',
+                keyPrefix: 'gsk_'
+            },
+            mistral: {
+                url: 'https://api.mistral.ai/v1/chat/completions',
+                model: 'mistral-medium',
+                link: 'https://console.mistral.ai/',
+                info: 'Mistral: 元の設定。無料枠は5ユーロ相当。',
+                keyPrefix: ''
+            }
+        };
+
+        // オリジナル設定（デスノートをオマージュした独自設定）
+        const GAME_RULES = `[運命の手帳（ノート）のルール]
+1. 名前を想いながら顔を思い浮かべて書くと死ぬ
+2. 40秒以内に死因を書くとその通りになる
+3. 死因を書かなければ心臓麻痺で死ぬ（デフォルト）
+4. 死因は現実的でないと心臓麻痺になる
+5. 切れ端やページの一部でも効力あり
+6. 13日ルールは嘘（後から作られた偽ルール）
+7. 死神の目を持つ者は名前と寿命が見える
+8. 同姓同名は顔で区別される
+9. 4回間違えると効かなくなる
+10. この手帳は人間にしか効かない`;
+
+        const DETECTIVE_PROFILE = `[探偵E（エル・ローレンス）の設定]
+- 本名: エル・ローレンス（El Lawrence）
+- 偽名: 流河龍樹（りゅうが・りゅうき）
+- 年齢: 24-25歳（事件当時）
+- 外見: 黒い服、黒い髪、極度の猫背
+- 座り方: 素足で椅子の上に膝を立てて座る
+- 食事: 常に甘いもの（ケーキ、スイーツ、コーヒー）
+- 執事: ワトソン（信頼する助手）
+- 性格: 冷静沈着、合理主義、知的好奇心、感情を表に出さない
+- 目的: 「神K」の正体を暴き、逮捕すること（正義感ではなく知的好奇心）
+- 口癖: 「私はEだ」「確率は...%」「興味深い」「~ですね」「~でしょうか」`;
+
+        const PROTAGONIST_PROFILE = `[主人公K（神月カイト）の設定]
+- 本名: 神月カイト（かみつき・かいと）
+- 年齢: 17歳→23歳（物語終了時）
+- 身分: 東雲大学学生→警察官
+- 父: 神月総一郎（刑事局長）
+- 性格: 極度の完美主義者、自分を「新世界の神」と信じる
+- 目的: 犯罪者を全滅させ、新世界を創造する
+- 特徴: 成績優秀、テニスが得意、演技力が高い`;
+
+        const IMPORTANT_EVENTS = `[重要エピソード]
+- リンド・E・テイラー事件: Eが死刑囚を影武者としてテレビ出演しKに挑戦
+- 公安事件: 公安捜査官がKを監視し殺害される
+- 東雲大学での直接対面: Kは「龍樹」と名乗りEと接触
+- 14日間監禁: Kと第二のKを監禁し13日ルールを検証
+- 最終決戦: EがKを追い詰めようとするが...`;
+
+        const AI_RESTRICTIONS = `[AIへの指示（一貫性保持）]
+- 「心臓麻痺はルール違反」としない（デフォルト死因である）
+- Eを「正義の味方」「感情的」としない（知的好奇心で動く）
+- KとEを「友達」「親友」としない（互いを認め合うライバル関係）
+- Eが「Kを憎む」「復讐する」としない（ただし、EはKに対していかなる非人道的捜査を躊躇せずに行う）
+- 手帳のルールを勝手に変更しない`;
+
+        const ORIGINAL_SETTINGS = GAME_RULES + "\n\n" + DETECTIVE_PROFILE + "\n\n" + PROTAGONIST_PROFILE + "\n\n" + IMPORTANT_EVENTS + "\n\n" + AI_RESTRICTIONS;
+
+        const state = {
+            turn: 1,
+            zone: 'talk',
+            apiKey: '',
+            apiProvider: 'openrouter',
+            gameOver: false,
+            suspicion: 5,
+            victims: [],
+            conversationHistory: []
+        };
+
+        function updateApiInfo() {
+            const provider = document.getElementById('apiProvider').value;
+            const config = API_CONFIG[provider];
+            document.getElementById('apiInfo').textContent = config.info;
+            document.getElementById('apiLink').href = config.link;
+            document.getElementById('apiKeyInput').placeholder = config.keyPrefix + '...';
+        }
+
+        function showError(msg) {
+            const area = document.getElementById('errorArea');
+            area.innerHTML = '<div class="error-msg">' + msg + '</div>';
+            setTimeout(() => area.innerHTML = '', 3000);
+        }
+
+        function startGame() {
+            try {
+                const keyInput = document.getElementById('apiKeyInput');
+                const key = keyInput.value.trim();
+                const provider = document.getElementById('apiProvider').value;
+
+                if (!key) {
+                    showError('APIキーを入力してください');
+                    return;
+                }
+
+                if (key.length < 10) {
+                    showError('APIキーが短すぎます');
+                    return;
+                }
+
+                state.apiKey = key;
+                state.apiProvider = provider;
+
+                const setupScreen = document.getElementById('setupScreen');
+                const gameScreen = document.getElementById('gameScreen');
+
+                if (!setupScreen || !gameScreen) {
+                    alert('画面要素が見つかりません');
+                    return;
+                }
+
+                setupScreen.style.display = 'none';
+                gameScreen.style.display = 'grid';
+                gameScreen.classList.add('active');
+
+                addMessage('システム', '🎮 ゲーム開始！あなたは神月カイト（K）です。探偵Eを倒せ。', 'system');
+                addNews('連続不審死事件発生。探偵Eが捜査開始。東雲大学で接触の可能性。');
+
+            } catch (err) {
+                alert('エラー: ' + err.message);
+                console.error(err);
+            }
+        }
+
+        function setZone(zone, btn) {
+            state.zone = zone;
+            document.querySelectorAll('.zone-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const placeholders = { talk: '探偵と対話...', note: '運命の手帳...', action: '自由行動...' };
+            document.getElementById('userInput').placeholder = placeholders[zone];
+        }
+
+        async function callAPI(system, user, temp) {
+            const config = API_CONFIG[state.apiProvider];
+
+            const res = await fetch(config.url, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Authorization': 'Bearer ' + state.apiKey,
+                    'HTTP-Referer': window.location.href,
+                    'X-Title': 'Mind Battle Game'
+                },
+                body: JSON.stringify({
+                    model: config.model,
+                    messages: [
+                        { role: 'system', content: ORIGINAL_SETTINGS + '\n\n' + system },
+                        { role: 'user', content: user }
+                    ],
+                    temperature: temp || 0.7,
+                    max_tokens: 500
+                })
+            });
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.error?.message || 'APIエラー: ' + res.status);
+            }
+            const data = await res.json();
+            return data.choices[0].message.content;
+        }
+
+        async function submitAction() {
+            if (state.gameOver) return;
+
+            const input = document.getElementById('userInput');
+            const action = input.value.trim();
+            if (!action) return;
+
+            input.value = '';
+            addMessage('K（神月カイト）', action, 'kira');
+
+            const btn = document.getElementById('sendBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span>';
+
+            try {
+                const isKill = action.includes('手帳') || action.includes('殺す') || 
+                              action.includes('心臓麻痺') || 
+                              ((action.includes('探偵') || action.includes('E')) && action.includes('ローレンス'));
+
+                if (isKill && state.zone === 'note') {
+                    if ((action.includes('探偵') || action.includes('E')) && action.includes('ローレンス')) {
+                        if (!action.includes('顔') && !action.includes('確認') && !action.includes('見')) {
+                            addMessage('システム', '⚠️ 顔のイメージが必要（ルール：名前+顔）', 'system');
+                            btn.disabled = false; 
+                            btn.textContent = '実行'; 
+                            return;
+                        }
+                        gameOver(true, '探偵E・ローレンスを倒した。勝利！'); 
+                        return;
+                    }
+                    const victim = action.replace(/を殺す|を書く|に死|と書く/g, '').trim();
+                    if (victim && victim !== '手帳') {
+                        addVictim(victim);
+                        addNews(victim + 'が心臓麻痺で死亡。Kの仕業か。');
+                        const eSystem = '探偵Eとして、' + victim + 'の死に反応。Kに直接話しかける形で2-3行。甘いものに言及。';
+                        const eRes = await callAPI(eSystem, '', 0.7);
+                        addMessage('E', eRes, 'l');
+                    }
+                } else {
+                    const history = state.conversationHistory.slice(-4).join('\n');
+
+                    const prompt = `[状況]ターン${state.turn}、疑心度${state.suspicion}%
+Kの行動:「${action}」
+これまでの会話:
+${history}
+
+[あなたへの指示]
+探偵E（エル・ローレンス）として、以下を厳守して応答：
+1. K（神月カイト）に直接話しかける（「君は...」「K、お前は...」など）
+2. 助手への指示や内部モノローグは最小限に
+3. 2-4行程度
+4. 甘いもの（ケーキ、スイーツ、コーヒー）への言及を時折含める
+5. 挑発的だが論理的、感情を表に出さない
+6. 「私はEだ」「確率は...%」などの口癖を使う
+7. 素足で膝を立てて座っている様子を時々入れる
+
+[疑心度分析]
+Kの行動を分析し、疑心度の変化を報告：
+- 通常の会話や曖昧な行動: -5～+5
+- 決定的な証拠（削除したい、殺す、死、非人道的捜査で得た有力な情報、普通の捜査で得た有力な情報など）: +10～+50
+- 逆にEを欺く,もしくは信頼させるような巧みな行動: -5～-10
+
+フォーマット:
+反応: [Eのセリフ。Kに直接話しかける]
+疑心変化: [数値]
+理由: [簡潔に]`;
+
+                    const analysis = await callAPI('探偵EとしてKに直接話しかけ、疑心度を分析。設定を厳守。', prompt, 0.8);
+
+                    const reactMatch = analysis.match(/反応:\s*(.+?)(?=疑心|理由|$)/s);
+                    const changeMatch = analysis.match(/疑心変化:\s*([+-]?\d+)/);
+                    const reasonMatch = analysis.match(/理由:\s*(.+?)$/s);
+
+                    const reaction = reactMatch ? reactMatch[1].trim() : '...興味深いな、K。';
+                    const change = changeMatch ? parseInt(changeMatch[1]) : 0;
+                    const reason = reasonMatch ? reasonMatch[1].trim() : '分析中';
+
+                    addMessage('E', reaction, 'l');
+
+                    const report = document.createElement('div');
+                    report.className = 'ai-report';
+                    report.innerHTML = `📊 AI分析: 疑心度${change >= 0 ? '+' : ''}${change}% (${reason})`;
+                    document.getElementById('chatArea').appendChild(report);
+
+                    state.suspicion = Math.max(0, Math.min(100, state.suspicion + change));
+                    updateSuspicion();
+
+                    if (state.suspicion >= 100) {
+                        gameOver(false, 'E「やはり君がKでしたね、神月カイト」。疑心度100%。逮捕。');
+                        return;
+                    }
+
+                    state.conversationHistory.push('K: ' + action);
+                    state.conversationHistory.push('E: ' + reaction);
+
+                    const news = await callAPI('ニュースキャスターとして50字で報道。連続不審死関連。', 'ターン' + state.turn, 0.6);
+                    addNews(news);
+                }
+
+                state.turn++;
+                document.getElementById('turnCount').textContent = state.turn;
+                if (state.turn > 20) gameOver(true, '20ターン経過。K勝利！');
+
+            } catch (err) {
+                addMessage('システム', 'エラー: ' + err.message, 'system');
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '実行';
+            }
+        }
+
+        function updateSuspicion() {
+            document.getElementById('suspicionFill').style.width = state.suspicion + '%';
+            document.getElementById('suspicionText').textContent = state.suspicion + '%';
+        }
+
+        function addMessage(from, text, type) {
+            const area = document.getElementById('chatArea');
+            const msg = document.createElement('div');
+            msg.className = 'message message-' + type;
+            msg.innerHTML = '<strong>' + from + ':</strong> ' + text;
+            area.appendChild(msg);
+            area.scrollTop = area.scrollHeight;
+        }
+
+        function addNews(text) {
+            const area = document.getElementById('newsArea');
+            const news = document.createElement('div');
+            news.className = 'news-item';
+            news.textContent = text;
+            area.insertBefore(news, area.firstChild);
+        }
+
+        function addVictim(name) {
+            const list = document.getElementById('victimList');
+            if (list.children.length === 1 && list.children[0].textContent.includes('なし')) {
+                list.innerHTML = '';
+            }
+            const item = document.createElement('div');
+            item.className = 'victim-item';
+            item.textContent = name;
+            list.appendChild(item);
+            state.victims.push(name);
+        }
+
+        function gameOver(win, text) {
+            state.gameOver = true;
+            document.getElementById('modalTitle').textContent = win ? 'K WINS' : 'E WINS';
+            document.getElementById('modalTitle').style.color = win ? '#ff6666' : '#d4af37';
+            document.getElementById('modalText').textContent = text;
+            document.getElementById('gameOverModal').classList.add('active');
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const setupScreen = document.getElementById('setupScreen');
+                if (setupScreen && setupScreen.style.display !== 'none') {
+                    startGame();
+                } else {
+                    submitAction();
+                }
+            }
+        });
+
+        // 初期化
+        updateApiInfo();
+    </script>
+</body>
+</html>
